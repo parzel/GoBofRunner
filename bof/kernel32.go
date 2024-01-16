@@ -1,6 +1,7 @@
 package bof
 
 import (
+	"fmt"
 	"unsafe"
 
 	"github.com/f1zm0/acheron"
@@ -79,4 +80,19 @@ func ReadProcessMemory(hProcess uintptr, lpBaseAddress uintptr, lpBuffer uintptr
 		*(*byte)(unsafe.Pointer(lpBuffer + i)) = *(*byte)(unsafe.Pointer(lpBaseAddress + i))
 	}
 	return true, nil
+}
+
+func VirtualFree(lpAddress uintptr, dwSize uint32, dwFreeType uintptr) (uintptr, error) {
+	var regionSize = uintptr(dwSize)
+	if _, err := Ach.Syscall(
+		Ach.HashString("NtFreeVirtualMemory"),
+		helper.HSelf,
+		uintptr(unsafe.Pointer(&lpAddress)),
+		uintptr(unsafe.Pointer(&regionSize)),
+		dwFreeType,
+	); err != nil {
+		fmt.Printf("[+] Could not free 0x%x\n", lpAddress)
+		return 0, err
+	}
+	return 1, nil
 }

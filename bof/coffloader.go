@@ -307,7 +307,20 @@ func ParseCoff(coff []byte, beaconData []byte) string {
 		}
 	}
 	DebugPrint("Relocations done\n")
+
+	// run the bof
 	C.RunBof(unsafe.Pointer(entryPoint), unsafe.Pointer(&beaconData[0]), C.uint64_t(len(beaconData)))
+
+	// free the allocated memory
+	VirtualFree(memSymbolsBaseAddress, 0, helper.MEM_RELEASE)
+	VirtualFree(got, 0, helper.MEM_RELEASE)
+	memorySections = (*helper.COFF_MEM_SECTION)(unsafe.Pointer(baseAddressOfMemory))
+	for i := 0; i < int(coffHdrPtr.NumberOfSections); i++ {
+		memorySectionPtr := (*helper.COFF_MEM_SECTION)(unsafe.Pointer(uintptr(unsafe.Pointer(memorySections)) + uintptr(unsafe.Sizeof(helper.COFF_MEM_SECTION{})*uintptr(i))))
+		VirtualFree(memorySectionPtr.InMemoryAddress, 0, helper.MEM_RELEASE)
+	}
+	VirtualFree(baseAddressOfMemory, 0, helper.MEM_RELEASE)
+
 	return output
 }
 
